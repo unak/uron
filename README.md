@@ -64,6 +64,7 @@ delivery the mail to there, and exits.
 If a block is passed, call the block.
 
 Examples:
+
     header :subject => [/\A[mailing-list:/], :dir => "mailing-list"
 This means that if the subject of the mail starts with `[mailing-list:`, delivery the mail to `mailing-list` directory (it's relative from your Maildir.)
 
@@ -81,6 +82,7 @@ the parameter.
 The parameter must be relative from your Maildir.
 
 Examples:
+
     delivery "mailing-list"
 
 
