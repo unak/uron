@@ -33,30 +33,15 @@ Write `~/.uronrc` file.
 
 ### Basic Definitions
 
-<dl>
-<dt>
-
-`Maildir`
-
-</dt>
-<dd>
+#### `Maildir`
 
 The path of your maildir.
 If not specified, `~/Maildir` is assumed.
 
-</dd>
-<dt>
-
-`Log`
-
-</dt>
-<dd>
+#### `Log`
 
 The path of the log file.
 If not specified, uron outputs no log.
-
-</dd>
-</dl>
 
 ### Delivery Rules
 
@@ -64,13 +49,7 @@ In delivery rules, you can write Ruby code in code blocks.
 If a block returns a true value, uron assumes that the mail is delivered
 and exits.
 
-<dl>
-<dt>
-
-`header`
-
-</dt>
-<dd>
+#### `header`
 
 Takes one Hash parameter and optional block.
 
@@ -93,18 +72,9 @@ This means that if the subject of the mail starts with `[mailing-list:`, deliver
     end
 Same as above.
 
-</dd>
-</dl>
-
 ### Delivery Commands
 
-<dl>
-<dt>
-
-`delivery`
-
-</dt>
-<dd>
+#### `delivery`
 
 Takes one String parameter and delivery the mail to the directory specfied by
 the parameter.
@@ -112,9 +82,6 @@ The parameter must be relative from your Maildir.
 
 Examples:
     delivery "mailing-list"
-
-</dd>
-</dl>
 
 
 License
