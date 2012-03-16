@@ -66,7 +66,9 @@ If a block is passed, call the block.
 Examples:
 
     header :subject => [/\A[mailing-list:/], :dir => "mailing-list"
-This means that if the subject of the mail starts with `[mailing-list:`, delivery the mail to `mailing-list` directory (it's relative from your Maildir.)
+This means that if the subject of the mail starts with `[mailing-list:`,
+delivery the mail to `mailing-list` directory (it's relative from your
+Maildir.)
 
     header :subject => [/\A[mailing-list:/] do
       delivery "mailing-list"

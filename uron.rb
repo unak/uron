@@ -34,11 +34,23 @@ class Uron
   end
 
   attr_reader :mail
+  attr_reader :maildir
+  attr_reader :logfile
 
   def initialize(rc)
+    self.class.class_eval do
+      remove_const :Maildir if defined?(Maildir)
+      remove_const :Log if defined?(Log)
+    end
+
     @ruleset = []
-    open(rc) do |f|
-      eval(f.read, binding, rc)
+
+    if rc.respond_to?(:read)
+      eval(rc.read)
+    else
+      open(rc) do |f|
+        eval(f.read, binding, rc)
+      end
     end
 
     @maildir = File.expand_path((Maildir rescue "~/Maildir"))
