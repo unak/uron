@@ -34,15 +34,27 @@ Write `~/.uronrc` file.
 ### Basic Definitions
 
 <dl>
-<dt>`Maildir`</dt>
+<dt>
+
+`Maildir`
+
+</dt>
 <dd>
+
 The path of your maildir.
 If not specified, `~/Maildir` is assumed.
+
 </dd>
-<dt>`Log`</dt>
+<dt>
+
+`Log`
+
+</dt>
 <dd>
+
 The path of the log file.
 If not specified, uron outputs no log.
+
 </dd>
 </dl>
 
@@ -53,8 +65,13 @@ If a block returns a true value, uron assumes that the mail is delivered
 and exits.
 
 <dl>
-<dt>`header`</dt>
+<dt>
+
+`header`
+
+</dt>
 <dd>
+
 Takes one Hash parameter and optional block.
 
 The Hash parameter must include at least one key which means a mail header.
@@ -75,20 +92,27 @@ This means that if the subject of the mail starts with `[mailing-list:`, deliver
       delivery "mailing-list"
     end
 Same as above.
+
 </dd>
 </dl>
 
 ### Delivery Commands
 
 <dl>
-<dt>`delivery`</dt>
+<dt>
+
+`delivery`
+
+</dt>
 <dd>
+
 Takes one String parameter and delivery the mail to the directory specfied by
 the parameter.
 The parameter must be relative from your Maildir.
 
 Examples:
     delivery "mailing-list"
+
 </dd>
 </dl>
 
