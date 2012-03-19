@@ -33,6 +33,8 @@ require "socket"
 #= uron - a mail delivery agent
 #
 class Uron
+  ConfigError = class.new(RuntimeError)
+
   # execute uron
   #
   # _rc_ is a String of the configuration file.
@@ -82,6 +84,7 @@ class Uron
                 block.call(@mail) && throw(:tag) if cond =~ header
               rescue
                 logging $!
+                raise $!
               end
             end
           end
@@ -123,8 +126,8 @@ class Uron
   def header(h, &block)
     deliv = h.delete(:delivery)
     trans = h.delete(:transfer)
-    raise "need one of :delivery, :transfer or a block" if !deliv && !trans && !block
-    raise "can specify only one of :delivery, :transfer or a block" if (deliv && block) || (trans && block) || (deliv && trans)
+    raise ConfigError, "need one of :delivery, :transfer or a block" if !deliv && !trans && !block
+    raise ConfigError, "can specify only one of :delivery, :transfer or a block" if (deliv && block) || (trans && block) || (deliv && trans)
     block = lambda{ delivery deliv } if deliv
     block = lambda{ transfer *trans } if trans
     @ruleset.push([h.keys.first, h.values.flatten(1), block])
