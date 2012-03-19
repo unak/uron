@@ -119,7 +119,7 @@ header :to => [/\\Ausa3@/], :invoke => ["#{ruby}", "-e", "exit /^To:.*usa3@/ =~ 
       ex = $!
     end
     uron.logging ex
-    assert_match /\btest_logging\b.*\bfoo\b.*\bRuntimeError\b/, File.read(uron.logfile)
+    assert_match /^RuntimeError: foo\n\t.*\btest_uron\.rb:\d+:in `test_logging'/, File.read(uron.logfile) #`
   end
 
   def test_header

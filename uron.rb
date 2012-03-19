@@ -116,8 +116,7 @@ class Uron
       f.seek(0, File::SEEK_END)
 
       if log.is_a?(Exception)
-        str = log.backtrace.shift + ": #{log.message} (#{log.class})"
-        log = [str, *log].join("\n\t")
+        log = ["#{log.class}: #{log.message}", *log.backtrace].join("\n\t")
       end
       f.puts log
 
@@ -160,7 +159,10 @@ class Uron
       end
       logging "  Folder: %.60s %8d" % [File.join(dir, 'new', file)[0, 60], mail.plain.bytesize]
     rescue Errno::EACCES
-      raise $! if n > 100
+      if n > 100
+        logging $!
+        raise $!
+      end
       n += 1
       retry
     end
@@ -190,7 +192,7 @@ class Uron
   # this method passes the mail to the command via stdin, and returns the exit
   # status value of it.
   def invoke(cmd, *args)
-    result = -1
+    result = nil
     Tempfile.open("uron") do |f|
       f.print mail.plain
       f.rewind
@@ -199,6 +201,10 @@ class Uron
       begin
         system(cmd, *args)
         result = $?.to_i
+      rescue
+        result = -1
+        logging $!
+        raise $!
       ensure
         orig_stdin = $stdin.reopen(orig_stdin)
       end
@@ -295,10 +301,11 @@ if __FILE__ == $0
     exit 1
   end
 
-  result = 1
   begin
-    result = Uron.run(File.expand_path(rcfile))
-  ensure
-    exit result
+    exit Uron.run(File.expand_path(rcfile))
+  rescue
+    $stderr.puts "#{$!.class}: #{$!.message}"
+    $stderr.puts $!.backtrace.join("\n\t")
+    exit 1
   end
 end
