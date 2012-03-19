@@ -1,6 +1,7 @@
 require "test/unit"
 require "fileutils"
 require "rbconfig"
+require "stringio"
 require "tempfile"
 require "tmpdir"
 if defined?(require_relative)
@@ -21,11 +22,13 @@ end
 class TestUron < Test::Unit::TestCase
   def setup
     @tmpdir = Dir.mktmpdir
+    @maildir = @tmpdir
+    @logfile = File.expand_path("log", @maildir)
 
     ruby = File.join(RbConfig::CONFIG["bindir"], RbConfig::CONFIG["ruby_install_name"] + RbConfig::CONFIG["EXEEXT"])
     @rc = make_rc <<-END_OF_RC
 Maildir = "#{@tmpdir}"
-Log = File.expand_path("log", Maildir)
+Log = "#{@logfile}"
 
 header :from => [/\\Ausa@/] do
   delivery ".test"
@@ -90,7 +93,7 @@ header :to => [/\\Ausa3@/], :invoke => ["#{ruby}", "-e", "exit /^To:.*usa3@/ =~ 
 
   def test_maildir
     uron = Uron.new(@rc.path)
-    assert_equal File.expand_path(@tmpdir), uron.maildir
+    assert_equal @maildir, uron.maildir
 
     uron = Uron.new(File::NULL)
     assert_equal File.expand_path("~/Maildir"), uron.maildir
@@ -98,7 +101,7 @@ header :to => [/\\Ausa3@/], :invoke => ["#{ruby}", "-e", "exit /^To:.*usa3@/ =~ 
 
   def test_logfile
     uron = Uron.new(@rc.path)
-    assert_equal File.expand_path("log", @tmpdir), uron.logfile
+    assert_equal @logfile, uron.logfile
 
     uron = Uron.new(File::NULL)
     assert_nil uron.logfile
@@ -129,7 +132,7 @@ header :foo => []
     tmprc.unlink
 
     tmprc = make_rc <<-END_OF_RC
-header :foo => [], :delivery => "#{@tmpdir}", :transfer => []
+header :foo => [], :delivery => "", :transfer => []
     END_OF_RC
     assert_raise(Uron::ConfigError) do
       Uron.new(tmprc.path)
@@ -137,7 +140,7 @@ header :foo => [], :delivery => "#{@tmpdir}", :transfer => []
     tmprc.unlink
 
     tmprc = make_rc <<-END_OF_RC
-header :foo => [], :delivery => "#{@tmpdir}" do
+header :foo => [], :delivery => "" do
 end
     END_OF_RC
     assert_raise(Uron::ConfigError) do
@@ -158,46 +161,49 @@ end
   def test_delivery
     io = StringIO.new("From: usa@example.com\r\n\r\n")
     assert_equal 0, Uron.run(@rc.path, io)
-    mail = Dir.glob(File.join(@tmpdir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    mail = Dir.glob(File.join(@maildir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
     assert_nil mail
-    mail = Dir.glob(File.join(@tmpdir, ".test", "new", "*")).find{|e| /\A[^\.]/ =~ e}
-    io.rewind
-    assert_equal io.read, open(mail, "rb"){|f| f.read}
+    mail = Dir.glob(File.join(@maildir, ".test", "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    assert_equal io.string, open(mail, "rb"){|f| f.read}
+    assert_match /\s#{io.string.size}\r?\n\z/, File.read(@logfile)
     File.unlink mail if File.exist?(mail)
 
     io = StringIO.new("To: usa@example.com\r\n\r\n")
     assert_equal 0, Uron.run(@rc.path, io)
-    mail = Dir.glob(File.join(@tmpdir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    mail = Dir.glob(File.join(@maildir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
     assert_nil mail
-    mail = Dir.glob(File.join(@tmpdir, ".test", "new", "*")).find{|e| /\A[^\.]/ =~ e}
-    io.rewind
-    assert_equal io.read, open(mail, "rb"){|f| f.read}
+    mail = Dir.glob(File.join(@maildir, ".test", "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    assert_equal io.string, open(mail, "rb"){|f| f.read}
+    assert_match /\s#{io.string.size}\r?\n\z/, File.read(@logfile)
     File.unlink mail if File.exist?(mail)
 
     io = StringIO.new("From: foo@example.com\r\n\r\n")
     assert_equal 0, Uron.run(@rc.path, io)
-    mail = Dir.glob(File.join(@tmpdir, ".test", "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    mail = Dir.glob(File.join(@maildir, ".test", "new", "*")).find{|e| /\A[^\.]/ =~ e}
     assert_nil mail
-    mail = Dir.glob(File.join(@tmpdir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    mail = Dir.glob(File.join(@maildir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
     io.rewind
-    assert_equal io.read, open(mail, "rb"){|f| f.read}
+    assert_equal io.string, open(mail, "rb"){|f| f.read}
+    assert_match /\s#{io.string.size}\r?\n\z/, File.read(@logfile)
   end
 
   def test_invoke
     io = StringIO.new("From: usa3@example.com\r\n\r\n")
     assert_equal 0, Uron.run(@rc.path, io)
-    mail = Dir.glob(File.join(@tmpdir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    mail = Dir.glob(File.join(@maildir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
     assert_nil mail
+    assert_match /\s0\r?\n\z/, File.read(@logfile)
 
     io = StringIO.new("To: usa3@example.com\r\n\r\n")
     assert_equal 0, Uron.run(@rc.path, io)
-    mail = Dir.glob(File.join(@tmpdir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    mail = Dir.glob(File.join(@maildir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
     assert_nil mail
+    assert_match /\s0\r?\n\z/, File.read(@logfile)
 
-    io = StringIO.new("From: foo@example.com\r\n\r\n")
+    io = StringIO.new(s = "From: foo@example.com\r\n\r\n")
     assert_equal 0, Uron.run(@rc.path, io)
-    mail = Dir.glob(File.join(@tmpdir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
-    io.rewind
-    assert_equal io.read, open(mail, "rb"){|f| f.read}
+    mail = Dir.glob(File.join(@maildir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    assert_equal io.string, open(mail, "rb"){|f| f.read}
+    assert_match /\s#{io.string.size}\r?\n\z/, File.read(@logfile)
   end
 end
