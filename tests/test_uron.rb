@@ -1,4 +1,5 @@
 require "test/unit"
+require "fileutils"
 require "tempfile"
 require "tmpdir"
 if defined?(require_relative)
@@ -18,7 +19,7 @@ end
 
 class TestUron < Test::Unit::TestCase
   def setup
-    @tmpdir = Dir.tmpdir
+    @tmpdir = Dir.mktmpdir
 
     @rc = make_rc <<-END_OF_RC
 Maildir = "#{@tmpdir}"
@@ -40,6 +41,7 @@ header :to => [/\Ausa2@/], :transfer => ["localhost", "usa@localhost"]
 
   def teardown
     @rc.unlink
+    FileUtils.rm_rf @tmpdir
   end
 
   def make_rc(str)
@@ -92,6 +94,21 @@ header :to => [/\Ausa2@/], :transfer => ["localhost", "usa@localhost"]
 
     uron = Uron.new(File::NULL)
     assert_nil uron.logfile
+  end
+
+  def test_logging
+    uron = Uron.new(@rc.path)
+    uron.logging "test"
+    assert_equal "test", File.read(uron.logfile).chomp
+
+    ex = nil
+    begin
+      raise RuntimeError, "foo"
+    rescue
+      ex = $!
+    end
+    uron.logging ex
+    assert_match /\btest_logging\b.*\bfoo\b.*\bRuntimeError\b/, File.read(uron.logfile)
   end
 
   def test_header

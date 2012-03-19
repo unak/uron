@@ -112,7 +112,7 @@ class Uron
       f.seek(0, File::SEEK_END)
 
       if log.is_a?(Exception)
-        str = log.backtrace.shift + ": #{log.message} #{log.class}"
+        str = log.backtrace.shift + ": #{log.message} (#{log.class})"
         log = [str, *log].join("\n\t")
       end
       f.puts log
