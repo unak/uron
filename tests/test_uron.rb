@@ -1,5 +1,6 @@
 require "test/unit"
 require "fileutils"
+require "rbconfig"
 require "tempfile"
 require "tmpdir"
 if defined?(require_relative)
@@ -21,6 +22,7 @@ class TestUron < Test::Unit::TestCase
   def setup
     @tmpdir = Dir.mktmpdir
 
+    ruby = File.join(RbConfig::CONFIG["bindir"], RbConfig::CONFIG["ruby_install_name"] + RbConfig::CONFIG["EXEEXT"])
     @rc = make_rc <<-END_OF_RC
 Maildir = "#{@tmpdir}"
 Log = File.expand_path("log", Maildir)
@@ -36,6 +38,12 @@ header :from => [/\\Ausa2@/] do
 end
 
 header :to => [/\\Ausa2@/], :transfer => ["localhost", "usa@localhost"]
+
+header :from => [/\\Ausa3@/] do
+  invoke("#{ruby}", "-e", "exit /^From:.*usa3@/ =~ ARGF.read ? 0 : 1") == 0
+end
+
+header :to => [/\\Ausa3@/], :invoke => ["#{ruby}", "-e", "exit /^To:.*usa3@/ =~ ARGF.read ? 0 : 1"]
     END_OF_RC
   end
 
@@ -173,6 +181,23 @@ end
     mail = Dir.glob(File.join(@tmpdir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
     io.rewind
     assert_equal io.read, open(mail, "rb"){|f| f.read}
-    File.unlink mail if File.exist?(mail)
+  end
+
+  def test_invoke
+    io = StringIO.new("From: usa3@example.com\r\n\r\n")
+    assert_equal 0, Uron.run(@rc.path, io)
+    mail = Dir.glob(File.join(@tmpdir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    assert_nil mail
+
+    io = StringIO.new("To: usa3@example.com\r\n\r\n")
+    assert_equal 0, Uron.run(@rc.path, io)
+    mail = Dir.glob(File.join(@tmpdir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    assert_nil mail
+
+    io = StringIO.new("From: foo@example.com\r\n\r\n")
+    assert_equal 0, Uron.run(@rc.path, io)
+    mail = Dir.glob(File.join(@tmpdir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    io.rewind
+    assert_equal io.read, open(mail, "rb"){|f| f.read}
   end
 end

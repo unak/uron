@@ -28,6 +28,7 @@
 require "etc"
 require "net/smtp"
 require "socket"
+require "tempfile"
 
 #
 #= uron - a mail delivery agent
@@ -133,10 +134,13 @@ class Uron
   def header(h, &block)
     deliv = h.delete(:delivery)
     trans = h.delete(:transfer)
-    raise ConfigError, "need one of :delivery, :transfer or a block" if !deliv && !trans && !block
-    raise ConfigError, "can specify only one of :delivery, :transfer or a block" if (deliv && block) || (trans && block) || (deliv && trans)
-    block = lambda{ delivery deliv } if deliv
-    block = lambda{ transfer *trans } if trans
+    invok = h.delete(:invoke)
+    t = [deliv, trans, invok, block].compact
+    raise ConfigError, "need one of :delivery, :transfer, :invoke or a block" if t.empty?
+    raise ConfigError, "can specify only one of :delivery, :transfer, :invoke or a block" if t.size != 1
+    block = proc{ delivery deliv } if deliv
+    block = proc{ transfer *trans } if trans
+    block = proc{ invoke(*invok) == 0 } if invok
     @ruleset.push([h.keys.first, h.values.flatten(1), block])
   end
 
@@ -176,6 +180,30 @@ class Uron
     end
     logging "   Trans: %.60s %8d" % [to[0, 60], mail.plain.bytesize]
     true # mains success
+  end
+
+  # invoke a command
+  #
+  # _cmd_ is a String specifies the command.
+  # _args_ are Strings that will be passed to the command.
+  #
+  # this method passes the mail to the command via stdin, and returns the exit
+  # status value of it.
+  def invoke(cmd, *args)
+    result = -1
+    Tempfile.open("uron") do |f|
+      f.print mail.plain
+      f.rewind
+      orig_stdin = $stdin.dup
+      $stdin.reopen(f)
+      begin
+        system(cmd, *args)
+        result = $?.to_i
+      ensure
+        orig_stdin = $stdin.reopen(orig_stdin)
+      end
+    end
+    result
   end
 
   # mail
