@@ -33,7 +33,7 @@ require "socket"
 #= uron - a mail delivery agent
 #
 class Uron
-  ConfigError = class.new(RuntimeError)
+  ConfigError = Class.new(RuntimeError)
 
   # execute uron
   #
@@ -155,10 +155,10 @@ class Uron
   # transfer the mail to some host
   #
   # _host_ is a String specifies the target host name (or the IP address).
+  # _to_ is a String specifies the target address.
   # _port_ is an optional parameter of a Numeric specifies the target host port.
   # _from_ is an optional parameter of a String specifies the envelove from.
-  # _to_ is a String specifies the target address.
-  def transfer(host, port = 25, from = nil, to)
+  def transfer(host, to, port = 25, from = nil)
     from ||= Etc.getlogin
     Net::SMTP.start(host, port) do |smtp|
       smtp.send_mail(mail.plain, from, to)

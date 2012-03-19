@@ -28,7 +28,13 @@ header :from => [/\Ausa@/] do
   delivery "test"
 end
 
-header :to => [/\Ausa@/], :dir => "test"
+header :to => [/\Ausa@/], :delivery => "test"
+
+header :from => [/\Ausa2@/] do
+  transfer "localhost", "usa@localhost"
+end
+
+header :to => [/\Ausa2@/], :transfer => ["localhost", "usa@localhost"]
     END_OF_RC
     @rc.close
   end
