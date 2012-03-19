@@ -18,10 +18,10 @@ end
 
 class TestUron < Test::Unit::TestCase
   def setup
-    @rc = Tempfile.new("uron_test")
-    @rc.binmode
-    @rc.puts <<-END_OF_RC
-Maildir = "./"
+    @tmpdir = Dir.tmpdir
+
+    @rc = make_rc <<-END_OF_RC
+Maildir = "#{@tmpdir}"
 Log = File.join(Maildir, "log")
 
 header :from => [/\Ausa@/] do
@@ -36,11 +36,18 @@ end
 
 header :to => [/\Ausa2@/], :transfer => ["localhost", "usa@localhost"]
     END_OF_RC
-    @rc.close
   end
 
   def teardown
     @rc.unlink
+  end
+
+  def make_rc(str)
+    tmprc = Tempfile.open("uron_test")
+    tmprc.binmode
+    tmprc.puts str
+    tmprc.close
+    tmprc
   end
 
   def test_new
@@ -50,7 +57,7 @@ header :to => [/\Ausa2@/], :transfer => ["localhost", "usa@localhost"]
 
   def test_maildir
     uron = Uron.new(@rc.path)
-    assert_equal File.expand_path("./"), uron.maildir
+    assert_equal File.expand_path(@tmpdir), uron.maildir
 
     uron = Uron.new(File::NULL)
     assert_equal File.expand_path("~/Maildir"), uron.maildir
@@ -58,9 +65,45 @@ header :to => [/\Ausa2@/], :transfer => ["localhost", "usa@localhost"]
 
   def test_logfile
     uron = Uron.new(@rc.path)
-    assert_equal File.expand_path("log", "./"), uron.logfile
+    assert_equal File.expand_path("log", @tmpdir), uron.logfile
 
     uron = Uron.new(File::NULL)
     assert_nil uron.logfile
+  end
+
+  def test_header
+    tmprc = make_rc <<-END_OF_RC
+header :foo => []
+    END_OF_RC
+    assert_raise(Uron::ConfigError) do
+      Uron.new(tmprc.path)
+    end
+    tmprc.unlink
+
+    tmprc = make_rc <<-END_OF_RC
+header :foo => [], :delivery => "#{@tmpdir}", :transfer => []
+    END_OF_RC
+    assert_raise(Uron::ConfigError) do
+      Uron.new(tmprc.path)
+    end
+    tmprc.unlink
+
+    tmprc = make_rc <<-END_OF_RC
+header :foo => [], :delivery => "#{@tmpdir}" do
+end
+    END_OF_RC
+    assert_raise(Uron::ConfigError) do
+      Uron.new(tmprc.path)
+    end
+    tmprc.unlink
+
+    tmprc = make_rc <<-END_OF_RC
+    header :foo => [], :transfer => [] do
+end
+    END_OF_RC
+    assert_raise(Uron::ConfigError) do
+      Uron.new(tmprc.path)
+    end
+    tmprc.unlink
   end
 end
