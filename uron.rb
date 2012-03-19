@@ -27,16 +27,30 @@
 
 require "socket"
 
+#
+#= uron - a mail delivery agent
+#
 class Uron
+  # execute uron
+  #
+  # _rc_ is a String (file name) or an IO of configurations.
   def self.run(rc)
     uron = Uron.new(rc)
     uron.run
   end
 
+  # processed mail
   attr_reader :mail
+
+  # path of Maildir
   attr_reader :maildir
+
+  # path of log file
   attr_reader :logfile
 
+  # initialize the Uron object
+  #
+  # _rc_ is a String (file name) or an IO of configurations.
   def initialize(rc)
     self.class.class_eval do
       remove_const :Maildir if defined?(Maildir)
@@ -57,6 +71,7 @@ class Uron
     @logfile = File.expand_path(Log) rescue nil
   end
 
+  # execute uron
   def run
     @mail = self.class::Mail.read
 
@@ -78,6 +93,12 @@ class Uron
     0
   end
 
+  # check specified header and process the mail
+  #
+  # _h_ is a Hash which includes a Symbol of a header as the key and an Array
+  # of Regexps as the value to checking the contents of the header.
+  # if _h_ includes :dir, the value means the path to be delivered.
+  # if _block_ is passed, uron processes it.
   def header(h, &block)
     dir = h.delete(:dir)
     raise "need the target directory or block" if !dir && !block
@@ -86,6 +107,9 @@ class Uron
     @ruleset.push([h.keys.first, h.values.flatten(1), block])
   end
 
+  # deliver the mail to a directory
+  #
+  # _dir_ is the target directory
   def delivery(dir)
     dir = File.join(@maildir, dir, "new")
     n = 1
@@ -102,20 +126,33 @@ class Uron
     true # means success
   end
 
+  # mail
   class Mail
+    # read a mail from stdin
     def self.read
       self.new($stdin.binmode.read)
     end
 
+    # a Hash of mail headers
     attr_reader :headers
+
+    # an Array of mail body
     attr_reader :body
+
+    # a String of the orignal mail text
     attr_reader :plain
 
+    # initialize a Uron::Mail object
+    #
+    # _plain_ is the original mail text.
     def initialize(plain)
       @plain = plain.dup
       parse(@plain)
     end
 
+    # parse the mail text
+    #
+    # _plain_ is the original mail text.
     def parse(plain)
       @headers = {}
       @body = []
@@ -126,7 +163,7 @@ class Uron
           # header
           line.chomp!
           if line.empty?
-            make_header(prev) if prev
+            set_header(prev) if prev
             header_p = false
             next
           end
@@ -134,7 +171,7 @@ class Uron
           if /\A\s/ =~ line
             prev = (prev || "") + " " + line.sub(/\A\s+/, '')
           else
-            make_header(prev) if prev
+            set_header(prev) if prev
             prev = line
           end
         else
@@ -148,7 +185,8 @@ class Uron
       end
     end
 
-    def make_header(line)
+    # set a header to @headers
+    def set_header(line)
       title, data = line.split(/: */, 2)
       title = title.tr("-", "_").downcase.to_sym
       @headers[title] = [] unless @headers.include?(title)
