@@ -86,6 +86,7 @@ class Uron
     catch(:tag) do
       @ruleset.each do |sym, conds, block|
         if @mail.headers[sym]
+          conds = [conds] unless conds.is_a?(Array)
           conds.each do |cond|
             @mail.headers[sym].each do |header|
               begin

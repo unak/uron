@@ -55,9 +55,9 @@ Takes one Hash parameter and optional block.
 
 The Hash parameter must include at least one key which means a mail header.
 The key is all lower cases and converted `-` to `_'.
-The value of the key must be an array of Regexp values.
-uron matches the Regexp values to the value of mail headers specified by
-the key, and do something if matched.
+The value of the key must be a Regexp or an Array of Regexps.
+uron matches the Regexp(s) to the value of mail headers specified by the key,
+and do something if matched.
 
 If `:delivery` is included in the Hash parameter, delivery the mail to
 the value, and exits.
@@ -69,12 +69,12 @@ If a block is passed, call the block.
 
 Examples:
 
-    header :subject => [/\A[mailing-list:/], :delivery => "mailing-list"
+    header :subject => /\A[mailing-list:/, :delivery => "mailing-list"
 This means that if the subject of the mail starts with `[mailing-list:`,
 delivery the mail to `mailing-list` directory (it's relative from your
 Maildir.)
 
-    header :subject => [/\A[mailing-list:/] do
+    header :subject => /\A[mailing-list:/ do
       delivery "mailing-list"
     end
 Same as above.

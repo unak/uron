@@ -30,23 +30,23 @@ class TestUron < Test::Unit::TestCase
 Maildir = "#{@tmpdir}"
 Log = "#{@logfile}"
 
-header :from => [/\\Ausa@/] do
+header :from => /\\Ausa@/ do
   delivery ".test"
 end
 
-header :to => [/\\Ausa@/], :delivery => ".test"
+header :to => /\\Ausa@/, :delivery => ".test"
 
-header :from => [/\\Ausa2@/] do
+header :from => /\\Ausa2@/ do
   transfer "localhost", "usa@localhost"
 end
 
-header :to => [/\\Ausa2@/], :transfer => ["localhost", "usa@localhost"]
+header :to => /\\Ausa2@/, :transfer => ["localhost", "usa@localhost"]
 
-header :from => [/\\Ausa3@/] do
+header :from => /\\Ausa3@/ do
   invoke("#{ruby}", "-e", "exit /^From:.*usa3@/ =~ ARGF.read ? 0 : 1") == 0
 end
 
-header :to => [/\\Ausa3@/], :invoke => ["#{ruby}", "-e", "exit /^To:.*usa3@/ =~ ARGF.read ? 0 : 1"]
+header :to => /\\Ausa3@/, :invoke => ["#{ruby}", "-e", "exit /^To:.*usa3@/ =~ ARGF.read ? 0 : 1"]
     END_OF_RC
   end
 
