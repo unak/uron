@@ -203,6 +203,7 @@ class Uron
         orig_stdin = $stdin.reopen(orig_stdin)
       end
     end
+    logging "  Invoke: %.60s %8d" % [cmd[0, 60], result]
     result
   end
 
