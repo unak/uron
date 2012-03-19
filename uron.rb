@@ -79,6 +79,9 @@ class Uron
   def run(io = $stdin)
     @mail = self.class::Mail.read(io)
 
+    logging "From #{(@mail.headers[:from] || []).first}  #{Time.now}"
+    logging " Subject: #{@mail.headers[:subject].first[0, 69]}" if @mail.headers.include?(:subject)
+
     catch(:tag) do
       @ruleset.each do |sym, conds, block|
         if @mail.headers[sym]
@@ -96,7 +99,7 @@ class Uron
       end
 
       # if here, no rule was adpoted
-      delivery @maildir
+      delivery ""
     end
 
     0
@@ -141,15 +144,16 @@ class Uron
   #
   # _dir_ is a String specifes the target directory.
   def delivery(dir)
-    dir = File.expand_path(File.join(dir, "new"), @maildir)
-    Dir.mkdir(dir) unless File.exist?(dir)
+    ldir = File.expand_path(File.join(dir, "new"), @maildir)
+    Dir.mkdir(ldir) unless File.exist?(ldir)
     n = 1
     begin
       file = "%d.%d_%d.%s" % [Time.now.to_i, Process.pid, n, Socket.gethostname]
-      open(File.expand_path(file, dir), "wb", File::CREAT | File::EXCL) do |f|
+      open(File.expand_path(file, ldir), "wb", File::CREAT | File::EXCL) do |f|
         f.write mail.plain
         f.chmod 0600
       end
+      logging "  Folder: #{File.join(dir, "new", file)[0, 60]} #{'%8d' % mail.plain.bytesize}"
     rescue Errno::EACCES
       raise $! if n > 100
       n += 1
@@ -169,6 +173,7 @@ class Uron
     Net::SMTP.start(host, port) do |smtp|
       smtp.send_mail(mail.plain, from, to)
     end
+    logging "   Trans: #{to} #{'%8d' % mail.plain.bytesize}"
     true # mains success
   end
 
