@@ -216,7 +216,7 @@ header :to => /\\Ausa3@/, :invoke => ["#{ruby}", "-e", "exit /^To:.*usa3@/ =~ AR
     assert_match /\sTrans:[^\n]+\s#{io.string.size}\r?\n\z/, File.read(@logfile)
     assert_equal "mx.example.com", SMTPMock.instance.host
     assert_equal 25, SMTPMock.instance.port
-    assert_equal "localhost", SMTPMock.instance.helo
+    assert_match /\Alocalhost\b/, SMTPMock.instance.helo
     assert_equal Etc.getlogin, SMTPMock.instance.from
     assert_equal ["usa@example.com"], SMTPMock.instance.to
     assert_equal io.string, SMTPMock.instance.src
@@ -228,7 +228,7 @@ header :to => /\\Ausa3@/, :invoke => ["#{ruby}", "-e", "exit /^To:.*usa3@/ =~ AR
     assert_match /\sTrans:[^\n]+\s#{io.string.size}\r?\n\z/, File.read(@logfile)
     assert_equal "mx.example.com", SMTPMock.instance.host
     assert_equal 25, SMTPMock.instance.port
-    assert_equal "localhost", SMTPMock.instance.helo
+    assert_match /\Alocalhost\b/, SMTPMock.instance.helo
     assert_equal Etc.getlogin, SMTPMock.instance.from
     assert_equal ["usa@example.com"], SMTPMock.instance.to
     assert_equal io.string, SMTPMock.instance.src

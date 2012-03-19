@@ -26,9 +26,9 @@
 #
 
 require "etc"
+require "fileutils"
 require "net/smtp"
 require "socket"
-require "tempfile"
 
 #
 #= uron - a mail delivery agent
@@ -194,21 +194,18 @@ class Uron
   # status value of it.
   def invoke(cmd, *args)
     result = nil
-    Tempfile.open("uron") do |f|
-      f.print mail.plain
-      f.rewind
-      orig_stdin = $stdin.dup
-      $stdin.reopen(f)
-      begin
-        system(cmd, *args)
-        result = $?.to_i
-      rescue
-        result = -1
-        logging $!
-        raise $!
-      ensure
-        orig_stdin = $stdin.reopen(orig_stdin)
+    begin
+      unless args.empty?
+        cmd = cmd + ' ' + args.map{|e| "'#{e}'"}.join(' ')
       end
+      IO.popen(cmd, 'wb') do |f|
+        f.print mail.plain
+      end
+      result = $?.to_i
+    rescue
+      result = -1
+      logging $!
+      raise $!
     end
     logging "  Invoke: %.60s %8d" % [cmd[0, 60], result]
     result
