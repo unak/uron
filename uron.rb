@@ -78,7 +78,11 @@ class Uron
         if @mail.headers[sym]
           conds.each do |cond|
             @mail.headers[sym].each do |header|
-              block.call(@mail) && throw(:tag) if cond =~ header
+              begin
+                block.call(@mail) && throw(:tag) if cond =~ header
+              rescue
+                logging $!
+              end
             end
           end
         end
@@ -89,6 +93,25 @@ class Uron
     end
 
     0
+  end
+
+  # output a log
+  #
+  # _log_ is an Exception or a String.
+  def logging(log)
+    return unless @logfile
+    open(@logfile, "a") do |f|
+      f.flock(File::LOCK_EX)
+      f.seek(0, File::SEEK_END)
+
+      if log.is_a?(Exception)
+        str = log.backtrace.shift + ": #{log.message} #{log.class}"
+        log = [str, *log].join("\n\t")
+      end
+      f.puts log
+
+      f.flock(File::LOCK_UN)
+    end
   end
 
   # check specified header and process the mail
