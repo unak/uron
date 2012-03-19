@@ -1,14 +1,17 @@
 require "test/unit"
+require "etc"
 require "fileutils"
 require "rbconfig"
 require "stringio"
 require "tempfile"
 require "tmpdir"
-if defined?(require_relative)
-  require_relative "../uron"
-else
-  require File.expand_path("../uron", File.dirname(File.expand_path(__FILE__)))
+unless defined?(require_relative)
+  def require_relative(feature)
+    require File.expand_path(feature, File.dirname(File.expand_path(__FILE__)))
+  end
 end
+require_relative "smtpmock"
+require_relative "../uron"
 
 unless defined?(File::NULL)
   if /mswin|mingw|bccwin|djgpp/ =~ RUBY_PLATFORM
@@ -37,10 +40,10 @@ end
 header :to => /\\Ausa@/, :delivery => ".test"
 
 header :from => /\\Ausa2@/ do
-  transfer "localhost", "usa@localhost"
+  transfer "mx.example.com", "usa@example.com"
 end
 
-header :to => /\\Ausa2@/, :transfer => ["localhost", "usa@localhost"]
+header :to => /\\Ausa2@/, :transfer => ["mx.example.com", "usa@example.com"]
 
 header :from => /\\Ausa3@/ do
   invoke("#{ruby}", "-e", "exit /^From:.*usa3@/ =~ ARGF.read ? 0 : 1") == 0
@@ -124,7 +127,7 @@ header :to => /\\Ausa3@/, :invoke => ["#{ruby}", "-e", "exit /^To:.*usa3@/ =~ AR
 
   def test_header
     tmprc = make_rc <<-END_OF_RC
-header :foo => []
+      header :foo => //
     END_OF_RC
     assert_raise(Uron::ConfigError) do
       Uron.new(tmprc.path)
@@ -132,7 +135,7 @@ header :foo => []
     tmprc.unlink
 
     tmprc = make_rc <<-END_OF_RC
-header :foo => [], :delivery => "", :transfer => []
+      header :foo => //, :delivery => "", :transfer => []
     END_OF_RC
     assert_raise(Uron::ConfigError) do
       Uron.new(tmprc.path)
@@ -140,8 +143,8 @@ header :foo => [], :delivery => "", :transfer => []
     tmprc.unlink
 
     tmprc = make_rc <<-END_OF_RC
-header :foo => [], :delivery => "" do
-end
+      header :foo => //, :delivery => "" do
+      end
     END_OF_RC
     assert_raise(Uron::ConfigError) do
       Uron.new(tmprc.path)
@@ -149,11 +152,29 @@ end
     tmprc.unlink
 
     tmprc = make_rc <<-END_OF_RC
-    header :foo => [], :transfer => [] do
-end
+      header :foo => //, :transfer => [] do
+      end
     END_OF_RC
     assert_raise(Uron::ConfigError) do
       Uron.new(tmprc.path)
+    end
+    tmprc.unlink
+
+    tmprc = make_rc <<-END_OF_RC
+      Log = "#{@logfile}"
+      header :from => /\\Ausa\\b/ do
+        next false
+      end
+      header :from => /\\Ausa\\b/ do
+        next true
+      end
+    END_OF_RC
+    assert_nothing_raised do
+      io = StringIO.new("From: usa@example.com\r\n\r\n")
+      assert_equal 0, Uron.run(tmprc.path, io)
+      mail = Dir.glob(File.join(@maildir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+      assert_nil mail
+      assert_match /\AFrom [^\n]+\r?\n\z/, File.read(@logfile)
     end
     tmprc.unlink
   end
@@ -165,7 +186,7 @@ end
     assert_nil mail
     mail = Dir.glob(File.join(@maildir, ".test", "new", "*")).find{|e| /\A[^\.]/ =~ e}
     assert_equal io.string, open(mail, "rb"){|f| f.read}
-    assert_match /\s#{io.string.size}\r?\n\z/, File.read(@logfile)
+    assert_match /\sFolder:[^\n]+\s#{io.string.size}\r?\n\z/, File.read(@logfile)
     File.unlink mail if File.exist?(mail)
 
     io = StringIO.new("To: usa@example.com\r\n\r\n")
@@ -174,7 +195,7 @@ end
     assert_nil mail
     mail = Dir.glob(File.join(@maildir, ".test", "new", "*")).find{|e| /\A[^\.]/ =~ e}
     assert_equal io.string, open(mail, "rb"){|f| f.read}
-    assert_match /\s#{io.string.size}\r?\n\z/, File.read(@logfile)
+    assert_match /\sFolder:[^\n]+\s#{io.string.size}\r?\n\z/, File.read(@logfile)
     File.unlink mail if File.exist?(mail)
 
     io = StringIO.new("From: foo@example.com\r\n\r\n")
@@ -184,7 +205,39 @@ end
     mail = Dir.glob(File.join(@maildir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
     io.rewind
     assert_equal io.string, open(mail, "rb"){|f| f.read}
-    assert_match /\s#{io.string.size}\r?\n\z/, File.read(@logfile)
+    assert_match /\sFolder:[^\n]+\s#{io.string.size}\r?\n\z/, File.read(@logfile)
+  end
+
+  def test_transfer
+    io = StringIO.new("From: usa2@example.com\r\n\r\n")
+    assert_equal 0, Uron.run(@rc.path, io)
+    mail = Dir.glob(File.join(@maildir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    assert_nil mail
+    assert_match /\sTrans:[^\n]+\s#{io.string.size}\r?\n\z/, File.read(@logfile)
+    assert_equal "mx.example.com", SMTPMock.instance.host
+    assert_equal 25, SMTPMock.instance.port
+    assert_equal "localhost", SMTPMock.instance.helo
+    assert_equal Etc.getlogin, SMTPMock.instance.from
+    assert_equal ["usa@example.com"], SMTPMock.instance.to
+    assert_equal io.string, SMTPMock.instance.src
+
+    io = StringIO.new("To: usa2@example.com\r\n\r\n")
+    assert_equal 0, Uron.run(@rc.path, io)
+    mail = Dir.glob(File.join(@maildir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    assert_nil mail
+    assert_match /\sTrans:[^\n]+\s#{io.string.size}\r?\n\z/, File.read(@logfile)
+    assert_equal "mx.example.com", SMTPMock.instance.host
+    assert_equal 25, SMTPMock.instance.port
+    assert_equal "localhost", SMTPMock.instance.helo
+    assert_equal Etc.getlogin, SMTPMock.instance.from
+    assert_equal ["usa@example.com"], SMTPMock.instance.to
+    assert_equal io.string, SMTPMock.instance.src
+
+    io = StringIO.new(s = "From: foo@example.com\r\n\r\n")
+    assert_equal 0, Uron.run(@rc.path, io)
+    mail = Dir.glob(File.join(@maildir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    assert_equal io.string, open(mail, "rb"){|f| f.read}
+    assert_match /\sFolder:[^\n]+\s#{io.string.size}\r?\n\z/, File.read(@logfile)
   end
 
   def test_invoke
@@ -192,18 +245,18 @@ end
     assert_equal 0, Uron.run(@rc.path, io)
     mail = Dir.glob(File.join(@maildir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
     assert_nil mail
-    assert_match /\s0\r?\n\z/, File.read(@logfile)
+    assert_match /\sInvoke:[^\n]+\s0\r?\n\z/, File.read(@logfile)
 
     io = StringIO.new("To: usa3@example.com\r\n\r\n")
     assert_equal 0, Uron.run(@rc.path, io)
     mail = Dir.glob(File.join(@maildir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
     assert_nil mail
-    assert_match /\s0\r?\n\z/, File.read(@logfile)
+    assert_match /\sInvoke:[^\n]+\s0\r?\n\z/, File.read(@logfile)
 
     io = StringIO.new(s = "From: foo@example.com\r\n\r\n")
     assert_equal 0, Uron.run(@rc.path, io)
     mail = Dir.glob(File.join(@maildir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
     assert_equal io.string, open(mail, "rb"){|f| f.read}
-    assert_match /\s#{io.string.size}\r?\n\z/, File.read(@logfile)
+    assert_match /\sFolder:[^\n]+\s#{io.string.size}\r?\n\z/, File.read(@logfile)
   end
 end

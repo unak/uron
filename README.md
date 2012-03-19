@@ -111,9 +111,9 @@ Returns the status value of the command.
 Examples:
 
     if invoke("bsfilter", "-a") == 0
-      return delivery ".spam"
+      delivery ".spam"
     else
-      return false
+      false
     end
 
 #### `logging`
