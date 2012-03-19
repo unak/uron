@@ -22,7 +22,7 @@ class TestUron < Test::Unit::TestCase
 
     @rc = make_rc <<-END_OF_RC
 Maildir = "#{@tmpdir}"
-Log = File.join(Maildir, "log")
+Log = File.expand_path("log", Maildir)
 
 header :from => [/\Ausa@/] do
   delivery "test"
@@ -53,6 +53,29 @@ header :to => [/\Ausa2@/], :transfer => ["localhost", "usa@localhost"]
   def test_new
     uron = Uron.new(@rc.path)
     assert uron.is_a?(Uron)
+  end
+
+  def test_run_m
+    null = open(File::NULL)
+    begin
+      assert_nothing_raised do
+        Uron.run(@rc.path, null)
+      end
+    ensure
+      null.close
+    end
+  end
+
+  def test_run
+    uron = Uron.new(@rc.path)
+    null = open(File::NULL)
+    begin
+      assert_nothing_raised do
+        uron.run(null)
+      end
+    ensure
+      null.close
+    end
   end
 
   def test_maildir
