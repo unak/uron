@@ -33,7 +33,7 @@ require "socket"
 class Uron
   # execute uron
   #
-  # _rc_ is a String (file name) or an IO of configurations.
+  # _rc_ is a String of the configuration file.
   def self.run(rc)
     uron = Uron.new(rc)
     uron.run
@@ -50,7 +50,7 @@ class Uron
 
   # initialize the Uron object
   #
-  # _rc_ is a String (file name) or an IO of configurations.
+  # _rc_ is a String of the configuration file.
   def initialize(rc)
     self.class.class_eval do
       remove_const :Maildir if defined?(Maildir)
@@ -59,12 +59,8 @@ class Uron
 
     @ruleset = []
 
-    if rc.respond_to?(:read)
-      eval(rc.read)
-    else
-      open(rc) do |f|
-        eval(f.read, binding, rc)
-      end
+    open(rc) do |f|
+      eval(f.read, binding, rc)
     end
 
     @maildir = File.expand_path((Maildir rescue "~/Maildir"))
