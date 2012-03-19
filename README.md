@@ -87,6 +87,15 @@ Examples:
 
     delivery "mailing-list"
 
+#### `transfer`
+
+Takes one String parameter and transfer the mail to the host specfied by
+the parameters.
+
+Examples:
+
+    transfer "some.host.of.example.com", "foo@example.com"
+
 
 License
 -------

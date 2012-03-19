@@ -25,6 +25,8 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
+require "etc"
+require "net/smtp"
 require "socket"
 
 #
@@ -105,7 +107,7 @@ class Uron
 
   # deliver the mail to a directory
   #
-  # _dir_ is the target directory
+  # _dir_ is a String specifes the target directory.
   def delivery(dir)
     dir = File.join(@maildir, dir, "new")
     n = 1
@@ -120,6 +122,20 @@ class Uron
       retry
     end
     true # means success
+  end
+
+  # transfer the mail to some host
+  #
+  # _host_ is a String specifies the target host name (or the IP address).
+  # _port_ is an optional parameter of a Numeric specifies the target host port.
+  # _from_ is an optional parameter of a String specifies the envelove from.
+  # _to_ is a String specifies the target address.
+  def transfer(host, port = 25, from = nil, to)
+    from ||= Etc.getlogin
+    Net::SMTP.start(host, port) do |smtp|
+      smtp.send_mail(mail.plain, from, to)
+    end
+    true # mains success
   end
 
   # mail
