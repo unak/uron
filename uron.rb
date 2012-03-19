@@ -38,9 +38,10 @@ class Uron
   # execute uron
   #
   # _rc_ is a String of the configuration file.
-  def self.run(rc)
+  # _io_ is a IO of the mail. (optional)
+  def self.run(rc, io = $stdin)
     uron = Uron.new(rc)
-    uron.run
+    uron.run(io)
   end
 
   # processed mail
@@ -55,6 +56,7 @@ class Uron
   # initialize the Uron object
   #
   # _rc_ is a String of the configuration file.
+  # _io_ is a IO of the mail.
   def initialize(rc)
     self.class.class_eval do
       remove_const :Maildir if defined?(Maildir)
@@ -72,8 +74,10 @@ class Uron
   end
 
   # execute uron
-  def run
-    @mail = self.class::Mail.read
+  #
+  # _io_ is a IO of the mail. (optional)
+  def run(io = $stdin)
+    @mail = self.class::Mail.read(io)
 
     catch(:tag) do
       @ruleset.each do |sym, conds, block|
@@ -137,10 +141,12 @@ class Uron
   #
   # _dir_ is a String specifes the target directory.
   def delivery(dir)
-    dir = File.join(@maildir, dir, "new")
+    dir = File.expand_path(File.join(dir, "new"), @maildir)
+    Dir.mkdir(dir) unless File.exist?(dir)
     n = 1
     begin
-      open(File.expand_path("%d.%d_%d.%s" % [Time.now.to_i, Process.pid, n, Socket.gethostname], dir), "wb", File::CREAT | File::EXCL) do |f|
+      file = "%d.%d_%d.%s" % [Time.now.to_i, Process.pid, n, Socket.gethostname]
+      open(File.expand_path(file, dir), "wb", File::CREAT | File::EXCL) do |f|
         f.write mail.plain
         f.chmod 0600
       end
@@ -169,8 +175,10 @@ class Uron
   # mail
   class Mail
     # read a mail from stdin
-    def self.read
-      self.new($stdin.binmode.read)
+    #
+    # _io_ is a IO of the mail. (optional)
+    def self.read(io = $stdin)
+      self.new(io.binmode.read)
     end
 
     # a Hash of mail headers
