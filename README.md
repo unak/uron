@@ -59,13 +59,15 @@ The value of the key must be an array of Regexp values.
 uron matches the Regexp values to the value of mail headers specified by
 the key, and do something if matched.
 
-If no block is passed, takes the value of `:dir` from the Hash parameter,
-delivery the mail to there, and exits.
+If `:delivery` is included in the Hash parameter, delivery the mail to
+the value, and exits.
+If `:transfer` is included in the Hash parameter, transfer the mail to
+the value, and exits.
 If a block is passed, call the block.
 
 Examples:
 
-    header :subject => [/\A[mailing-list:/], :dir => "mailing-list"
+    header :subject => [/\A[mailing-list:/], :delivery => "mailing-list"
 This means that if the subject of the mail starts with `[mailing-list:`,
 delivery the mail to `mailing-list` directory (it's relative from your
 Maildir.)

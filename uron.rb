@@ -98,10 +98,12 @@ class Uron
   # if _h_ includes :dir, the value means the path to be delivered.
   # if _block_ is passed, uron processes it.
   def header(h, &block)
-    dir = h.delete(:dir)
-    raise "need the target directory or block" if !dir && !block
-    raise "cannot specfiy both the target directory and block" if dir && block
-    block = lambda{ delivery dir } if dir
+    deliv = h.delete(:delivery)
+    trans = h.delete(:transfer)
+    raise "need one of :delivery, :transfer or a block" if !deliv && !trans && !block
+    raise "can specify only one of :delivery, :transfer or a block" if (deliv && block) || (trans && block) || (deliv && trans)
+    block = lambda{ delivery deliv } if deliv
+    block = lambda{ transfer *trans } if trans
     @ruleset.push([h.keys.first, h.values.flatten(1), block])
   end
 
