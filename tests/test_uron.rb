@@ -25,17 +25,17 @@ class TestUron < Test::Unit::TestCase
 Maildir = "#{@tmpdir}"
 Log = File.expand_path("log", Maildir)
 
-header :from => [/\Ausa@/] do
-  delivery "test"
+header :from => [/\\Ausa@/] do
+  delivery ".test"
 end
 
-header :to => [/\Ausa@/], :delivery => "test"
+header :to => [/\\Ausa@/], :delivery => ".test"
 
-header :from => [/\Ausa2@/] do
+header :from => [/\\Ausa2@/] do
   transfer "localhost", "usa@localhost"
 end
 
-header :to => [/\Ausa2@/], :transfer => ["localhost", "usa@localhost"]
+header :to => [/\\Ausa2@/], :transfer => ["localhost", "usa@localhost"]
     END_OF_RC
   end
 
@@ -145,5 +145,34 @@ end
       Uron.new(tmprc.path)
     end
     tmprc.unlink
+  end
+
+  def test_delivery
+    io = StringIO.new("From: usa@example.com\r\n\r\n")
+    assert_equal 0, Uron.run(@rc.path, io)
+    mail = Dir.glob(File.join(@tmpdir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    assert_nil mail
+    mail = Dir.glob(File.join(@tmpdir, ".test", "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    io.rewind
+    assert_equal io.read, open(mail, "rb"){|f| f.read}
+    File.unlink mail if File.exist?(mail)
+
+    io = StringIO.new("To: usa@example.com\r\n\r\n")
+    assert_equal 0, Uron.run(@rc.path, io)
+    mail = Dir.glob(File.join(@tmpdir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    assert_nil mail
+    mail = Dir.glob(File.join(@tmpdir, ".test", "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    io.rewind
+    assert_equal io.read, open(mail, "rb"){|f| f.read}
+    File.unlink mail if File.exist?(mail)
+
+    io = StringIO.new("From: foo@example.com\r\n\r\n")
+    assert_equal 0, Uron.run(@rc.path, io)
+    mail = Dir.glob(File.join(@tmpdir, ".test", "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    assert_nil mail
+    mail = Dir.glob(File.join(@tmpdir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+    io.rewind
+    assert_equal io.read, open(mail, "rb"){|f| f.read}
+    File.unlink mail if File.exist?(mail)
   end
 end

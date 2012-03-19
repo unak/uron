@@ -144,8 +144,9 @@ class Uron
   #
   # _dir_ is a String specifes the target directory.
   def delivery(dir)
+    dir = @maildir if dir.empty?
     ldir = File.expand_path(File.join(dir, "new"), @maildir)
-    Dir.mkdir(ldir) unless File.exist?(ldir)
+    FileUtils.mkdir_p(ldir)
     n = 1
     begin
       file = "%d.%d_%d.%s" % [Time.now.to_i, Process.pid, n, Socket.gethostname]
@@ -153,7 +154,7 @@ class Uron
         f.write mail.plain
         f.chmod 0600
       end
-      logging "  Folder: #{File.join(dir, "new", file)[0, 60]} #{'%8d' % mail.plain.bytesize}"
+      logging "  Folder: %.60s %8d" % [File.join(dir, 'new', file)[0, 60], mail.plain.bytesize]
     rescue Errno::EACCES
       raise $! if n > 100
       n += 1
@@ -173,7 +174,7 @@ class Uron
     Net::SMTP.start(host, port) do |smtp|
       smtp.send_mail(mail.plain, from, to)
     end
-    logging "   Trans: #{to} #{'%8d' % mail.plain.bytesize}"
+    logging "   Trans: %.60s %8d" % [to[0, 60], mail.plain.bytesize]
     true # mains success
   end
 
