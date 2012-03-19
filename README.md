@@ -91,8 +91,8 @@ Examples:
 
 #### `transfer`
 
-Takes one String parameter and transfer the mail to the host specfied by
-the parameters.
+Takes two String parameters and transfer the mail to the host and the address
+specfied by the parameters.
 
 Examples:
 
