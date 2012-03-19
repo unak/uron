@@ -63,6 +63,8 @@ If `:delivery` is included in the Hash parameter, delivery the mail to
 the value, and exits.
 If `:transfer` is included in the Hash parameter, transfer the mail to
 the value, and exits.
+If `:invoke` is included in the Hash parameter, invoke the command specfied
+by the value, and if the command returns zero, exits.
 If a block is passed, call the block.
 
 Examples:
@@ -97,6 +99,26 @@ specfied by the parameters.
 Examples:
 
     transfer "some.host.of.example.com", "foo@example.com"
+
+#### `invoke`
+
+Takes at least one String parameters and invoke the command specified by
+the 1st parameter and passes command arguments specified by rest parameters.
+Passes the mail via stdin to the command.
+
+Returns the status value of the command.
+
+Examples:
+
+    if invoke("bsfilter", "-a") == 0
+      return delivery ".spam"
+    else
+      return false
+    end
+
+#### `logging`
+
+Takes one String parameter and outout it to the log file.
 
 
 License
