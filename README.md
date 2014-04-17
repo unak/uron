@@ -1,5 +1,5 @@
 [![Build Status](https://img.shields.io/travis/unak/uron.svg)](https://travis-ci.org/unak/uron)
-
+[![Version     ](https://img.shields.io/gem/v/uron.svg)](https://rubygems.org/gems/uron)
 uron
 ====
 
