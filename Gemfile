@@ -1,1 +1,1 @@
-gem 'test-unit', :group => 'test'
+gemspec
