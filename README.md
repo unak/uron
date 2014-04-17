@@ -1,3 +1,5 @@
+[![Build Status](https://img.shields.io/travis/unak/uron.svg)](https://travis-ci.org/unak/uron)
+
 uron
 ====
 

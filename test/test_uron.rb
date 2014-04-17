@@ -11,7 +11,7 @@ unless defined?(require_relative)
   end
 end
 require_relative "smtpmock"
-require_relative "../uron"
+require_relative "../bin/uron"
 
 unless defined?(File::NULL)
   if /mswin|mingw|bccwin|djgpp/ =~ RUBY_PLATFORM
