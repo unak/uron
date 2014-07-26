@@ -1,8 +1,10 @@
 # coding: utf-8
 # -*- Ruby -*-
+require File.expand_path("bin/uron")
+
 Gem::Specification.new do |spec|
   spec.name          = "uron"
-  spec.version       = "1.0.0"
+  spec.version       = Uron::VERSION
   spec.authors       = ["U.Nakamura"]
   spec.email         = ["usa@garbagecollect.jp"]
   spec.description   = %q{uron is a mail delivery agent}

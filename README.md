@@ -126,7 +126,7 @@ Takes one String parameter and outout it to the log file.
 License
 -------
 
-Copyright (c) 2012 NAKAMURA Usaku usa@garbagecollect.jp
+Copyright (c) 2012,2014 NAKAMURA Usaku usa@garbagecollect.jp
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:

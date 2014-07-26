@@ -2,7 +2,7 @@
 # coding: UTF-8
 
 #
-# Copyright (c) 2012 NAKAMURA Usaku usa@garbagecollect.jp
+# Copyright (c) 2012,2014 NAKAMURA Usaku usa@garbagecollect.jp
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -34,6 +34,8 @@ require "socket"
 #= uron - a mail delivery agent
 #
 class Uron
+  VERSION = "1.1.0"
+
   ConfigError = Class.new(RuntimeError)
 
   # execute uron
@@ -59,7 +61,7 @@ class Uron
   # _rc_ is a String of the configuration file.
   # _io_ is a IO of the mail.
   def initialize(rc)
-    self.class.class_eval do
+    self.class.class_exec do
       remove_const :Maildir if defined?(Maildir)
       remove_const :Log if defined?(Log)
     end
