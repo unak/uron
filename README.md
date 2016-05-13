@@ -17,7 +17,7 @@ Currently, uron has not been tested well yet.
 Requirement
 -----------
 
-Ruby 1.8.7, 1.9.3 or later.
+Ruby 1.8.7, 1.9.3 or later. (Recommended 2.2 or later.)
 
 uron assumes that your system follows the Maildir specification.
 
@@ -71,23 +71,29 @@ If a block is passed, call the block.
 
 Examples:
 
-    header :subject => /\A[mailing-list:/, :delivery => "mailing-list"
+```Ruby
+header :subject => /\A[mailing-list:/, :delivery => "mailing-list"
+```
 
 This means that if the subject of the mail starts with `[mailing-list:`,
 delivery the mail to `mailing-list` directory (it's relative from your
 Maildir.)
 
-    header :subject => /\A[mailing-list:/ do
-      delivery "mailing-list"
-    end
+```Ruby
+header :subject => /\A[mailing-list:/ do
+  delivery "mailing-list"
+end
+```
 
 Same as above.
 
 If you want to check multiple headers, simple put them as:
 
-   header :subject => /\A[mailing-list:/,
-          :from => /\Amailing-list-owner\b/,
-          :delivery => "mailing-list"
+```Ruby
+header :subject => /\A[mailing-list:/,
+       :from => /\Amailing-list-owner\b/,
+       :delivery => "mailing-list"
+```
 
 When `subject` and `from` are both matched, the mail will be delivered to `mailling-list` directory.
 
@@ -102,7 +108,9 @@ The parameter must be relative from your Maildir.
 
 Examples:
 
-    delivery "mailing-list"
+```Ruby
+delivery "mailing-list"
+```
 
 #### `transfer`
 
@@ -111,7 +119,9 @@ specfied by the parameters.
 
 Examples:
 
-    transfer "some.host.of.example.com", "foo@example.com"
+```Ruby
+transfer "some.host.of.example.com", "foo@example.com"
+```
 
 #### `invoke`
 
@@ -123,11 +133,13 @@ Returns the status value of the command.
 
 Examples:
 
-    if invoke("bsfilter", "-a") == 0
-      delivery ".spam"
-    else
-      false
-    end
+```Ruby
+if invoke("bsfilter", "-a") == 0
+  delivery ".spam"
+else
+  false
+end
+```
 
 #### `logging`
 
@@ -137,7 +149,7 @@ Takes one String parameter and outout it to the log file.
 License
 -------
 
-Copyright (c) 2012,2014 NAKAMURA Usaku usa@garbagecollect.jp
+Copyright (c) 2012 NAKAMURA Usaku usa@garbagecollect.jp
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
