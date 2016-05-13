@@ -2,7 +2,7 @@
 # coding: UTF-8
 
 #
-# Copyright (c) 2012,2014 NAKAMURA Usaku usa@garbagecollect.jp
+# Copyright (c) 2012 NAKAMURA Usaku usa@garbagecollect.jp
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -34,7 +34,7 @@ require "socket"
 #= uron - a mail delivery agent
 #
 class Uron
-  VERSION = "1.1.0"
+  VERSION = "1.2.0"
 
   ConfigError = Class.new(RuntimeError)
 
@@ -86,19 +86,38 @@ class Uron
     logging " Subject: #{@mail.headers[:subject].first[0, 69]}" if @mail.headers.include?(:subject)
 
     catch(:tag) do
-      @ruleset.each do |sym, conds, block|
-        if @mail.headers[sym]
-          conds = [conds] unless conds.is_a?(Array)
-          conds.each do |cond|
-            @mail.headers[sym].each do |header|
-              begin
-                block.call(@mail) && throw(:tag) if cond =~ header
-              rescue
-                logging $!
-                raise $!
+      @ruleset.each do |args, block|
+        matched = false
+        args.each_pair do |sym, conds|
+          unless @mail.headers[sym]
+            matched = false
+            break
+          end
+
+          conds = Array(conds)
+          found = false
+          @mail.headers[sym].each do |header|
+            conds.each do |cond|
+              if cond =~ header
+                found = true
+                break
               end
             end
           end
+
+          if found
+            matched = true
+          else
+            matched = false
+            break
+          end
+        end
+
+        begin
+          block.call(@mail) && throw(:tag) if matched
+        rescue
+          logging $!
+          raise $!
         end
       end
 
@@ -143,7 +162,7 @@ class Uron
     block = proc{ delivery deliv } if deliv
     block = proc{ transfer *trans } if trans
     block = proc{ invoke(*invok) == 0 } if invok
-    @ruleset.push([h.keys.first, h.values.flatten(1), block])
+    @ruleset.push([h, block])
   end
 
   # deliver the mail to a directory

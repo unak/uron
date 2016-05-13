@@ -72,6 +72,7 @@ If a block is passed, call the block.
 Examples:
 
     header :subject => /\A[mailing-list:/, :delivery => "mailing-list"
+
 This means that if the subject of the mail starts with `[mailing-list:`,
 delivery the mail to `mailing-list` directory (it's relative from your
 Maildir.)
@@ -79,7 +80,17 @@ Maildir.)
     header :subject => /\A[mailing-list:/ do
       delivery "mailing-list"
     end
+
 Same as above.
+
+If you want to check multiple headers, simple put them as:
+
+   header :subject => /\A[mailing-list:/,
+          :from => /\Amailing-list-owner\b/,
+          :delivery => "mailing-list"
+
+When `subject` and `from` are both matched, the mail will be delivered to `mailling-list` directory.
+
 
 ### Delivery Commands
 

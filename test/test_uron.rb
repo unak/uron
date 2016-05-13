@@ -177,6 +177,32 @@ header :to => /\\Ausa3@/, :invoke => ["#{ruby}", "-e", "exit /^To:.*usa3@/ =~ AR
       assert_match /\AFrom [^\n]+\r?\n\z/, File.read(@logfile)
     end
     tmprc.unlink
+    File.unlink(@logfile) if File.exist?(@logfile)
+
+    tmprc = make_rc <<-END_OF_RC
+      Log = "#{@logfile}"
+      header :from => /\\Ausa\\b/, :to => /\\Ausa\\b/ do
+        delivery ".mine"
+      end
+      header :from => /\\Ausa\\b/ do
+        delivery ".others"
+      end
+    END_OF_RC
+    assert_nothing_raised do
+      io = StringIO.new("From: usa@example.com\r\nTo: usa@example.com\r\n\r\n")
+      assert_equal 0, Uron.run(tmprc.path, io)
+      mail = Dir.glob(File.join(@maildir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+      assert_nil mail
+      assert_match /\AFrom [^\n]+\r?\n\s+Folder: .mine/, File.read(@logfile)
+      File.unlink(@logfile) if File.exist?(@logfile)
+
+      io = StringIO.new("From: usa@example.com\r\nTo: hoge@example.com\r\n\r\n")
+      assert_equal 0, Uron.run(tmprc.path, io)
+      mail = Dir.glob(File.join(@maildir, "new", "*")).find{|e| /\A[^\.]/ =~ e}
+      assert_nil mail
+      assert_match /\AFrom [^\n]+\r?\n\s+Folder: .others/, File.read(@logfile)
+    end
+    tmprc.unlink
   end
 
   def test_delivery
