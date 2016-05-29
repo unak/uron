@@ -34,7 +34,7 @@ require "socket"
 #= uron - a mail delivery agent
 #
 class Uron
-  VERSION = "1.2.0"
+  VERSION = "1.3.0"
 
   ConfigError = Class.new(RuntimeError)
 
@@ -307,10 +307,14 @@ if __FILE__ == $0
   require "optparse"
 
   rcfile = "~/.uronrc"
+  check_only = false
 
   opt = OptionParser.new
   opt.on('-r RCFILE', '--rc', 'use RCFILE as the ruleset configurations.') do |v|
     rcfile = v
+  end
+  opt.on('-c', '--check', 'check rcfile syntax only.') do
+    check_only = true
   end
   opt.parse!
   unless ARGV.empty?
@@ -321,7 +325,8 @@ if __FILE__ == $0
   end
 
   begin
-    exit Uron.run(File.expand_path(rcfile))
+    uron = Uron.new(File.expand_path(rcfile))
+    exit uron.run unless check_only
   rescue
     $stderr.puts "#{$!.class}: #{$!.message}"
     $stderr.puts $!.backtrace.join("\n\t")
