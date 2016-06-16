@@ -34,7 +34,7 @@ require "socket"
 #= uron - a mail delivery agent
 #
 class Uron
-  VERSION = "1.3.1"
+  VERSION = "1.3.2"
 
   ConfigError = Class.new(RuntimeError)
 
@@ -220,6 +220,7 @@ class Uron
         cmd = cmd + ' ' + args.map{|e| "'#{e}'"}.join(' ')
       end
       IO.popen(cmd, 'wb') do |f|
+        f.print mail.from + "\r\n" if mail.from
         f.print mail.plain
       end
       result = $?.to_i
