@@ -34,7 +34,7 @@ require "socket"
 #= uron - a mail delivery agent
 #
 class Uron
-  VERSION = "1.3.0"
+  VERSION = "1.3.1"
 
   ConfigError = Class.new(RuntimeError)
 
@@ -82,7 +82,7 @@ class Uron
   def run(io = $stdin)
     @mail = self.class::Mail.read(io)
 
-    logging "From #{(@mail.headers[:from] || []).first}  #{Time.now}"
+    logging @mail.from || "From #{(@mail.headers[:from] || []).first}  #{Time.now}"
     logging " Subject: #{@mail.headers[:subject].first[0, 69]}" if @mail.headers.include?(:subject)
 
     catch(:tag) do
@@ -241,6 +241,9 @@ class Uron
       self.new(io.binmode.read)
     end
 
+    # `From` line from MTA, if exists
+    attr_reader :from
+
     # a Hash of mail headers
     attr_reader :headers
 
@@ -254,6 +257,9 @@ class Uron
     #
     # _plain_ is the original mail text.
     def initialize(plain)
+      @from = nil
+      @headers = {}
+      @body = []
       @plain = plain.dup
       parse(@plain)
     end
@@ -262,11 +268,17 @@ class Uron
     #
     # _plain_ is the original mail text.
     def parse(plain)
+      @from = nil
       @headers = {}
       @body = []
       header_p = true
       prev = nil
       plain.each_line do |line|
+        if header_p && @headers.empty? && /\AFrom / =~ line
+          @from = line.chomp
+          next
+        end
+
         if header_p
           # header
           line.chomp!
