@@ -271,14 +271,14 @@ class Uron
       @from = nil
       @headers = {}
       @body = []
+
+      if plain.sub!(/\AFrom .*?\r?\n/, '')
+        @from = $&.chomp
+      end
+
       header_p = true
       prev = nil
       plain.each_line do |line|
-        if header_p && @headers.empty? && /\AFrom / =~ line
-          @from = line.chomp
-          next
-        end
-
         if header_p
           # header
           line.chomp!
